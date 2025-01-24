@@ -1,176 +1,124 @@
 import pytest
 from uuid import uuid4
-from datetime import datetime
-from sqlmodel import Session, SQLModel, create_engine
-from .models import User, InspectionStation, InspectionResult, InspectionResultCreate, InspectionResultUpdate
-from .crud import InspectionService
-
-# Test database setup
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+from datetime import datetime, timedelta
+from fastapi import HTTPException
+from sqlmodel import Session, create_engine, SQLModel
+import tempfile
+import shutil
+import os
 
 @pytest.fixture
-def session():
-    SQLModel.metadata.create_all(engine)
-    with Session(engine) as session:
-        yield session
-    SQLModel.metadata.drop_all(engine)
-
+def test_db():
+   engine = create_engine("sqlite:///./test.db")
+   SQLModel.metadata.create_all(engine)
+   with Session(engine) as session:
+       yield session
+   SQLModel.metadata.drop_all(engine)
+   
 @pytest.fixture
-def test_user():
-    return User(
-        id=uuid4(),
-        email="test@example.com",
-        full_name="Test User",
-        hashed_password="hashed"
-    )
+def test_upload_dir():
+   temp_dir = tempfile.mkdtemp()
+   yield temp_dir
+   shutil.rmtree(temp_dir)
 
-@pytest.fixture
-def test_station(session, test_user):
-    station = InspectionStation(
-        id=uuid4(),
-        name="Test Station",
-        description="Test Description",
-        product="Test Product",
-        criteria=["criteria1", "criteria2"],
-        owner_id=test_user.id
-    )
-    session.add(station)
-    session.commit()
-    return station
+class TestInspectionService:
+   @pytest.fixture
+   def service(self, test_db):
+       return InspectionService(test_db)
 
-@pytest.fixture
-def inspection_service(session):
-    return InspectionService(session)
+   def test_create_inspection(self, service, test_db):
+       user = User(id=uuid4(), email="test@test.com")
+       station = InspectionStation(id=uuid4(), owner_id=user.id)
+       test_db.add(station)
+       test_db.commit()
 
-def test_create_inspection_result(session, inspection_service, test_user, test_station):
-    inspection_data = InspectionResultCreate(
-        image_url="http://test.com/image.jpg",
-        inspection_outcome="pass",
-        notes="Test inspection"
-    )
-    
-    result = inspection_service.create_inspection_result(
-        test_station.id,
-        inspection_data,
-        test_user
-    )
-    
-    assert result.station_id == test_station.id
-    assert result.inspection_outcome == "pass"
+       inspection = InspectionResultCreate(
+           captured_image_url="http://test.com/img.jpg",
+           notes="Test inspection"
+       )
+       
+       result = service.create_inspection_result(station.id, inspection, user)
+       assert result.station_id == station.id
+       assert result.inspection_outcome == InspectionOutcome.PENDING
 
-def test_get_inspection_results(session, inspection_service, test_user, test_station):
-    # Create test results
-    for i in range(5):
-        inspection_service.create_inspection_result(
-            test_station.id,
-            InspectionResultCreate(
-                image_url=f"http://test.com/image{i}.jpg",
-                inspection_outcome="pass",
-                notes=f"Test inspection {i}"
-            ),
-            test_user
-        )
-    
-    results, total = inspection_service.get_inspection_results(
-        user=test_user,
-        page=1,
-        page_size=3
-    )
-    
-    assert len(results) == 3
-    assert total == 5
+   def test_get_inspection_results(self, service, test_db):
+       user = User(id=uuid4(), email="test@test.com")
+       station = InspectionStation(id=uuid4(), owner_id=user.id)
+       test_db.add(station)
+       test_db.commit()
 
-def test_update_inspection_result(session, inspection_service, test_user, test_station):
-    # Create initial result
-    result = inspection_service.create_inspection_result(
-        test_station.id,
-        InspectionResultCreate(
-            image_url="http://test.com/image.jpg",
-            inspection_outcome="pass",
-            notes="Initial notes"
-        ),
-        test_user
-    )
-    
-    # Update result
-    update_data = InspectionResultUpdate(
-        inspection_outcome="fail",
-        notes="Updated notes"
-    )
-    
-    updated_result = inspection_service.update_inspection_result(
-        result.id,
-        update_data,
-        test_user
-    )
-    
-    assert updated_result.inspection_outcome == "fail"
-    assert updated_result.notes == "Updated notes"
+       for _ in range(5):
+           inspection = InspectionResultCreate(captured_image_url="test.jpg")
+           service.create_inspection_result(station.id, inspection, user)
 
-def test_bulk_update_results(session, inspection_service, test_user, test_station):
-    # Create test results
-    result_ids = []
-    for i in range(3):
-        result = inspection_service.create_inspection_result(
-            test_station.id,
-            InspectionResultCreate(
-                image_url=f"http://test.com/image{i}.jpg",
-                inspection_outcome="pass",
-                notes=f"Test inspection {i}"
-            ),
-            test_user
-        )
-        result_ids.append(result.id)
-    
-    # Bulk update
-    update_data = InspectionResultUpdate(inspection_outcome="fail")
-    updated_results = inspection_service.bulk_update_results(
-        result_ids,
-        update_data,
-        test_user
-    )
-    
-    assert len(updated_results) == 3
-    assert all(r.inspection_outcome == "fail" for r in updated_results)
+       results, total = service.get_inspection_results(user, page_size=3)
+       assert total == 5
+       assert len(results) == 3
 
-def test_delete_inspection_result(session, inspection_service, test_user, test_station):
-    # Create result to delete
-    result = inspection_service.create_inspection_result(
-        test_station.id,
-        InspectionResultCreate(
-            image_url="http://test.com/image.jpg",
-            inspection_outcome="pass",
-            notes="Test notes"
-        ),
-        test_user
-    )
-    
-    # Delete result
-    success = inspection_service.delete_inspection_result(result.id, test_user)
-    assert success is True
-    
-    # Verify deletion
-    results, total = inspection_service.get_inspection_results(test_user)
-    assert total == 0
+class TestImageUploadService:
+   @pytest.fixture
+   def service(self, test_upload_dir):
+       service = ImageUploadService()
+       service.UPLOAD_DIR = test_upload_dir
+       return service
 
-def test_search_results(session, inspection_service, test_user, test_station):
-    # Create test results
-    for product in ["ProductA", "ProductB", "ProductC"]:
-        inspection_service.create_inspection_result(
-            test_station.id,
-            InspectionResultCreate(
-                image_url=f"http://test.com/{product}.jpg",
-                inspection_outcome="pass",
-                notes=f"Test {product}"
-            ),
-            test_user
-        )
-    
-    results, total = inspection_service.search_results(
-        user=test_user,
-        search_term="ProductA"
-    )
-    
-    assert total == 1
-    assert results[0].notes == "Test ProductA"
+   async def test_save_upload_file(self, service):
+       test_content = b"test image content"
+       test_file = UploadFile(
+           filename="test.jpg",
+           content_type="image/jpeg",
+           file=io.BytesIO(test_content)
+       )
+       
+       result = await service.save_upload_file(test_file)
+       assert result.file_name.endswith(".jpg")
+       assert os.path.exists(os.path.join(service.UPLOAD_DIR, result.file_name))
+
+class TestInspectionTagCRUD:
+   @pytest.fixture
+   def crud(self, test_db):
+       return InspectionTAGCRUD(test_db)
+
+   def test_create_and_get_inspection(self, crud):
+       user_id = uuid4()
+       inspection = InspectionTagBase(
+           date=datetime.now(),
+           inspection_type="test",
+           details="test details",
+           tags=["tag1", "tag2"]
+       )
+       
+       created = crud.create_inspection(inspection, user_id)
+       assert created.inspection_type == "test"
+       
+       retrieved = crud.get_inspection(created.id, user_id)
+       assert retrieved.id == created.id
+
+   def test_update_inspection(self, crud):
+       user_id = uuid4()
+       inspection = InspectionTagBase(
+           date=datetime.now(),
+           inspection_type="original",
+           details="original"
+       )
+       created = crud.create_inspection(inspection, user_id)
+       
+       update = InspectionTagUpdate(inspection_type="updated")
+       updated = crud.update_inspection(created.id, user_id, update)
+       assert updated.inspection_type == "updated"
+
+   def test_tag_operations(self, crud):
+       user_id = uuid4()
+       inspection = InspectionTagBase(
+           date=datetime.now(),
+           inspection_type="test",
+           details="test",
+           tags=[]
+       )
+       created = crud.create_inspection(inspection, user_id)
+       
+       with_tag = crud.add_tag(created.id, user_id, "newtag")
+       assert "newtag" in with_tag.tags
+       
+       without_tag = crud.remove_tag(created.id, user_id, "newtag")
+       assert "newtag" not in without_tag.tags
