@@ -20,6 +20,7 @@ class User(UserBase):
    hashed_password: str
    
 
+# for 1st problem statement
 class InspectionStation(BaseModel):
    id: uuid.UUID
    name: str
@@ -35,7 +36,7 @@ class Tag():
     
 
 
-
+#for 2nd problem statement 
 class InspectionTagBase(BaseModel):
    date: datetime
    inspection_type: str
@@ -43,6 +44,7 @@ class InspectionTagBase(BaseModel):
    tags: Tag | None=None
   
    
+  #for 2nd problem statement
 class InspectionStationCreate(BaseModel):
    name: str
    description: str
@@ -50,24 +52,34 @@ class InspectionStationCreate(BaseModel):
    criteria: List[str]
    tags: Tag | None=None
 
+
+# for 1st problem statement
 class InspectionResult(BaseModel):
    id: uuid.UUID
    station_id: uuid.UUID
    captured_image_url: HttpUrl
    inspection_outcome: InspectionOutcome
-   similarity_score: float
+   
    notes: Optional[str] = None
    created_at: datetime
    
+   # for 1st problem statement
 class InspectionResultCreate(BaseModel):
    captured_image_url: HttpUrl
    notes: Optional[str] = None
    
+   # for 1st problem statement
 class InspectionResultUpdate(BaseModel):
    inspection_outcome: Optional[InspectionOutcome] = None
-   similarity_score: Optional[float] = Field(None, ge=0, le=1)
+  
    notes: Optional[str] = None
+class ImageUploadResponse(BaseModel):
+    file_id: uuid.UUID
+    file_name: str
+    file_url: HttpUrl
+    uploaded_at: datetime
 
+# for 1st problem statement
 class PaginatedResponse(BaseModel):
    data: List[InspectionResult]
    total: int
