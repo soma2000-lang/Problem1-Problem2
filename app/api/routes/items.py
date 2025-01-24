@@ -7,7 +7,7 @@ from .models import (
     InspectionResultCreate,
     InspectionResultUpdate,
     InspectionResultPublic,
-    InspectionResultsPublic
+ 
 )
 from .auth import get_current_active_user
 from .crud import InspectionService
@@ -111,3 +111,26 @@ def filter_by_criteria(
     service = InspectionService(session)
     results, total = service.filter_results_by_criteria(current_user, criteria, page, page_size)
     return InspectionResultsPublic(data=results, count=total)
+
+
+# tag has to be added in the model
+
+#     # API Route
+# @router.post("/inspections/{inspection_id}/tags", response_model=List[TagResponse])
+# async def add_tags_to_inspection(
+#     inspection_id: UUID,
+#     tags: List[TagCreate],
+#     session: Session = Depends(get_session)
+# ):
+#     inspection = session.get(InspectionResult, inspection_id)
+#     if not inspection:
+#         raise HTTPException(status_code=404, detail="Inspection not found")
+        
+#     created_tags = []
+#     for tag_data in tags:
+#         tag = Tag(name=tag_data.name, inspection_id=inspection_id)
+#         session.add(tag)
+#         created_tags.append(tag)
+    
+#     session.commit()
+#     return created_tags
