@@ -30,27 +30,18 @@ class InspectionStation(BaseModel):
    owner_id: uuid.UUID
    created_at: datetime
 
-class Tag():
-    tags: List[str]
-    
-    
 
 
-#for 2nd problem statement 
-class InspectionTagBase(BaseModel):
-   date: datetime
-   inspection_type: str
-   details: str 
-   tags: Tag | None=None
+
   
    
-  #for 2nd problem statement
+  #for 1nd problem statement
 class InspectionStationCreate(BaseModel):
    name: str
    description: str
    product_image_url: HttpUrl
    criteria: List[str]
-   tags: Tag | None=None
+
 
 
 # for 1st problem statement
@@ -78,6 +69,26 @@ class ImageUploadResponse(BaseModel):
     file_name: str
     file_url: HttpUrl
     uploaded_at: datetime
+
+
+class Tag():
+    tags: List[str]
+    
+
+#for 2nd problem statement 
+class InspectionTagBase(BaseModel):
+   date: datetime
+   inspection_type: str
+   details: str 
+   tags: Tag | None=None
+class InspectionTagCreate(InspectionTagBase):
+   pass
+
+class InspectionTagUpdate(BaseModel):
+   date: Optional[datetime] = None
+   inspection_type: Optional[str] = None
+   details: Optional[str] = None
+   tags: Optional[List[str]] = Nones
 
 # for 1st problem statement
 class PaginatedResponse(BaseModel):

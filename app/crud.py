@@ -141,3 +141,126 @@ class ImageUploadService:
             if os.path.exists(file_path):
                 os.unlink(file_path)
             raise HTTPException(500, str(e))
+class InspectionTAGCRUD:
+   def __init__(self, session: Session):
+       self.session = session
+
+   def create_inspection(
+       self,
+       inspection: InspectionTagBase,
+       user_id: UUID
+   ) -> InspectionTag:
+       db_inspection = InspectionTag(
+           **inspection.dict(),
+           user_id=user_id
+       )
+       self.session.add(db_inspection)
+       self.session.commit()
+       self.session.refresh(db_inspection)
+       return db_inspection
+
+   def get_inspection(
+       self,
+       inspection_id: UUID,
+       user_id: UUID
+   ) -> Optional[InspectionTag]:
+       return self.session.exec(
+           select(InspectionTag).where(
+               InspectionTag.id == inspection_id,
+               InspectionTag.user_id == user_id
+           )
+       ).first()
+
+   def get_inspections(
+       self,
+       user_id: UUID,
+       date_from: Optional[datetime] = None,
+       date_to: Optional[datetime] = None,
+       inspection_type: Optional[str] = None,
+       tags: Optional[List[str]] = None,
+       skip: int = 0,
+       limit: int = 50
+   ) -> List[InspectionTag]:
+       query = select(InspectionTag).where(InspectionTag.user_id == user_id)
+
+       if date_from:
+           query = query.where(InspectionTag.date >= date_from)
+       if date_to:
+           query = query.where(InspectionTag.date <= date_to)
+       if inspection_type:
+           query = query.where(InspectionTag.inspection_type == inspection_type)
+       if tags:
+           query = query.where(InspectionTag.tags.contains(tags))
+
+       return self.session.exec(
+           query.offset(skip).limit(limit)
+       ).all()
+
+   def update_inspection(
+       self,
+       inspection_id: UUID,
+       user_id: UUID,
+       inspection_update: InspectionTagUpdate
+   ) -> InspectionTag:
+       inspection = self.get_inspection(inspection_id, user_id)
+       if not inspection:
+           raise HTTPException(status_code=404, detail="Inspection not found")
+
+       update_data = inspection_update.dict(exclude_unset=True)
+       for key, value in update_data.items():
+           setattr(inspection, key, value)
+
+       self.session.add(inspection)
+       self.session.commit()
+       self.session.refresh(inspection)
+       return inspection
+
+   def delete_inspection(
+       self,
+       inspection_id: UUID,
+       user_id: UUID
+   ) -> bool:
+       inspection = self.get_inspection(inspection_id, user_id)
+       if not inspection:
+           return False
+
+       self.session.delete(inspection)
+       self.session.commit()
+       return True
+
+   def add_tag(
+       self,
+       inspection_id: UUID,
+       user_id: UUID,
+       tag: str
+   ) -> InspectionTag:
+       inspection = self.get_inspection(inspection_id, user_id)
+       if not inspection:
+           raise HTTPException(status_code=404, detail="Inspection not found")
+
+       if not inspection.tags:
+           inspection.tags = []
+       inspection.tags.append(tag)
+
+       self.session.add(inspection)
+       self.session.commit()
+       self.session.refresh(inspection)
+       return inspection
+
+   def remove_tag(
+       self,
+       inspection_id: UUID,
+       user_id: UUID,
+       tag: str
+   ) -> InspectionTag:
+       inspection = self.get_inspection(inspection_id, user_id)
+       if not inspection:
+           raise HTTPException(status_code=404, detail="Inspection not found")
+
+       if inspection.tags and tag in inspection.tags:
+           inspection.tags.remove(tag)
+
+       self.session.add(inspection)
+       self.session.commit()
+       self.session.refresh(inspection)
+       return inspection
