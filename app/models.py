@@ -1,7 +1,10 @@
 import uuid
 from typing import List
 from pydantic import EmailStr
+from enum import Enum
+
 from sqlmodel import Field, Relationship, SQLModel
+
 
 class UserBase(SQLModel):
     email: EmailStr = Field(unique=True, index=True, max_length=255)
@@ -66,6 +69,11 @@ class InspectionResult(InspectionResultBase, table=True):
 class InspectionResultPublic(InspectionResultBase):
     id: uuid.UUID
     station_id: uuid.UUID
+class PaginatedResponse(SQLModel):
+    data: list[InspectionResult]
+    total: int
+    page: int
+    page_size: int
 
 class InspectionResultsPublic(SQLModel):
     data: list[InspectionResultPublic]
