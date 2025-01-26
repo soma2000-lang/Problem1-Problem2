@@ -152,11 +152,11 @@ class InspectionTAGCRUD:
    def create_inspection(
        self,
        inspection: InspectionTagBase,
-       user_id: UUID
-   ) -> InspectionTag:
-       db_inspection = InspectionTag(
+       id: UUID
+   ) -> InspectionTagCreate:
+       db_inspection = InspectionTagCreate(
            **inspection.dict(),
-           user_id=user_id
+           id=id
        )
        self.session.add(db_inspection)
        self.session.commit()
@@ -165,13 +165,13 @@ class InspectionTAGCRUD:
 
    def get_inspection(
        self,
-       inspection_id: UUID,
-       user_id: UUID
-   ) -> Optional[InspectionTag]:
+       inspection_id:  UUID,
+       id: UUID
+   ) -> InspectionTagCreate:
        return self.session.exec(
-           select(InspectionTag).where(
-               InspectionTag.id == inspection_id,
-               InspectionTag.user_id == user_id
+           select(InspectionTagCreate).where(
+               InspectionTagCreate.id == inspection_id,
+
            )
        ).first()
 
@@ -184,17 +184,17 @@ class InspectionTAGCRUD:
        tags: Optional[List[str]] = None,
        skip: int = 0,
        limit: int = 50
-   ) -> List[InspectionTag]:
-       query = select(InspectionTag).where(InspectionTag.user_id == user_id)
+   ) -> List[InspectionTagCreate]:
+       query = select(InspectionTagCreate).where(InspectionTagCreate.user_id == user_id)
 
        if date_from:
-           query = query.where(InspectionTag.date >= date_from)
+           query = query.where(InspectionTagCreate.date >= date_from)
        if date_to:
-           query = query.where(InspectionTag.date <= date_to)
+           query = query.where(InspectionTagCreate.date <= date_to)
        if inspection_type:
-           query = query.where(InspectionTag.inspection_type == inspection_type)
+           query = query.where(InspectionTagCreate.inspection_type == inspection_type)
        if tags:
-           query = query.where(InspectionTag.tags.contains(tags))
+           query = query.where(InspectionTagCreate.tags.contains(tags))
 
        return self.session.exec(
            query.offset(skip).limit(limit)
@@ -205,7 +205,7 @@ class InspectionTAGCRUD:
        inspection_id: UUID,
        user_id: UUID,
        inspection_update: InspectionTagUpdate
-   ) -> InspectionTag:
+   ) -> InspectionTagUpdate:
        inspection = self.get_inspection(inspection_id, user_id)
        if not inspection:
            raise HTTPException(status_code=404, detail="Inspection not found")
@@ -237,7 +237,7 @@ class InspectionTAGCRUD:
        inspection_id: UUID,
        user_id: UUID,
        tag: str
-   ) -> InspectionTag:
+   ) -> InspectionTagCreate:
        inspection = self.get_inspection(inspection_id, user_id)
        if not inspection:
            raise HTTPException(status_code=404, detail="Inspection not found")
@@ -256,7 +256,7 @@ class InspectionTAGCRUD:
        inspection_id: UUID,
        user_id: UUID,
        tag: str
-   ) -> InspectionTag:
+   ) -> InspectionTagCreate:
        inspection = self.get_inspection(inspection_id, user_id)
        if not inspection:
            raise HTTPException(status_code=404, detail="Inspection not found")

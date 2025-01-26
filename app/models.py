@@ -72,9 +72,11 @@ class ImageUploadResponse(BaseModel):
     uploaded_at: datetime
 
 
-class Tag():
-    tags: List[str]
-    
+class TagItem(BaseModel):
+    name: str = Field(..., description="Name of the tag")
+
+class Tag(BaseModel):
+    tags: List[TagItem]
 
 #for 2nd problem statement 
 class InspectionTagBase(BaseModel):
@@ -83,13 +85,20 @@ class InspectionTagBase(BaseModel):
    details: str 
    tags: Tag | None=None
 class InspectionTagCreate(InspectionTagBase):
-   pass
+    id: uuid.UUID
 
 class InspectionTagUpdate(BaseModel):
    date: Optional[datetime] = None
    inspection_type: Optional[str] = None
    details: Optional[str] = None
-   tags: Optional[List[str]] = None
+   tags: Tag | None=None
+   id: uuid.UUID
+class PaginatedResponse(BaseModel):
+   data: List[InspectionTagCreate]
+   total: int
+   page: int 
+   page_size: int
+
 
 # for 1st problem statement
 class PaginatedResponse(BaseModel):

@@ -8,6 +8,7 @@ from crud import InspectionService, ImageUploadService,InspectionTAGCRUD
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
    InspectionResult, 
+   Tag,
    InspectionStation,
    InspectionResultCreate,
    InspectionResultUpdate,
@@ -15,6 +16,7 @@ from app.models import (
    PaginatedResponse,
    InspectionOutcome,
     InspectionResult,
+    InspectionTagCreate,
    InspectionTagBase,
    InspectionTagUpdate, InspectionTag
 
@@ -178,106 +180,90 @@ async def list_inspections(
     return [InspectionResult.model_validate(inspection) for inspection in inspections]
 
 
-    # API Route
-@router.post("/inspections/{inspection_id}/tags", response_model=List[TagResponse])
-async def add_tags_to_inspection(
-    inspection_id: UUID,
-    tags: List[TagCreate],
-    session: Session = Depends(get_session)
+#Add Tag to Inspection:
+@router.post("/inspections/{inspection_id}/tags", response_model=InspectionTagCreate)
+def add_tag_to_inspection(
+    tag:UUID,
+    tag_data: Tag,
+    session: Session = SessionDep
 ):
-    inspection = session.get(InspectionResult, inspection_id)
+    inspection = session.get(Tag, tag)
     if not inspection:
         raise HTTPException(status_code=404, detail="Inspection not found")
-        
-    created_tags = []
-    for tag_data in tags:
-        tag = Tag(name=tag_data.name, inspection_id=inspection_id)
-        session.add(tag)
-        created_tags.append(tag)
-    
-    session.commit()
-    return created_tags
-
     
 
-@app.post("/upload/image/", response_model=ImageUploadResponse)
+    existing_tags = [tag.name for tag in inspection.tags]
+    
+   
+    if tag_data.tags not in existing_tags:
+        new_tag = Tag(name=tag_data.tag)
+        session.add(new_tag)
+        session.commit()
+        session.refresh(inspection)
+    
+    return InspectionTagCreate(
+        id=tag,
+        tags=[tag.name for tag in inspection.tags]
+    )
+    
+
+@router.post("/upload/image/", response_model=ImageUploadResponse)
 async def upload_image(file: UploadFile = File(...)):
     return await image_service.save_upload_file(file)
 
-@app.post("/inspections/{inspection_id}/image")
+@router.post("/inspections/{inspection_id}/image")
 async def upload_inspection_image(
-    inspection_id: uuid.UUID,
+    inspection_id: UUID,
     file: UploadFile = File(...)
 ):
     uploaded = await image_service.save_upload_file(file)
   
     return uploaded
-
-@router.get("/inspections/", response_model=List[InspectionResult])
+# for 2nd model
+@router.get("/inspections/", response_model=List[InspectionTagCreate])
 async def filter_inspections(
     inspection_type: Optional[str] = Query(None),
     date_from: Optional[datetime] = Query(None),
     date_to: Optional[datetime] = Query(None),
     tags: Optional[List[str]] = Query(None),
     outcome: Optional[InspectionOutcome] = Query(None),
-    station_id: Optional[UUID] = Query(None),
-  
-    page: int = Query(1, gt=0),
-    page_size: int = Query(20, gt=0, le=100)
+ 
 ):
-    query = select(InspectionResult).join(InspectionStation)
+    #query = select(InspectionResult).join(InspectionStation)
     
     if inspection_type:
-        query = query.where(InspectionStation.inspection_tag.inspection_type == inspection_type)
+        query = select(InspectionTagCreate).where(InspectionTagCreate.inspection_type == inspection_type)
     
     if date_from:
-        query = query.where(InspectionResult.created_at >= date_from)
+        query = select(InspectionTagCreate).where(InspectionTagCreate.created_at >= date_from)
     
     if date_to:
-        query = query.where(InspectionResult.created_at <= date_to)
+        query = select(InspectionTagCreate).where(InspectionResult.created_at <= date_to)
         
     if tags:
-        query = query.where(InspectionStation.inspection_tag.tags.contains(tags))
+        query = select(InspectionTagCreate).where(InspectionStation.inspection_tag.tags.contains(tags))
         
     if outcome:
-        query = query.where(InspectionResult.inspection_outcome == outcome)
+        query = select(InspectionTagCreate).where(InspectionResult.inspection_outcome == outcome)
         
-    if station_id:
-        query = query.where(InspectionResult.station_id == station_id)
-        
-    if similarity_score_min is not None:
-        query = query.where(InspectionResult.similarity_score >= similarity_score_min)
-        
-    if similarity_score_max is not None:
-        query = query.where(InspectionResult.similarity_score <= similarity_score_max)
+
+   
+    inspections = Session.exec(query).all()
     
-    total = session.exec(query).count()
-    
-
-    offset = (page - 1) * page_size
-    query = query.offset(offset).limit(page_size)
-    
-    results = session.exec(query).all()
-    return PaginatedResponse(
-        data=results,
-        total=total,
-        page=page,
-        page_size=page_size
-    )
+    return [InspectionTagCreate.model_validate(inspection) for inspection in inspections]
 
 
 
-
-@router.post("/inspections", response_model=InspectionTag)
+@router.post("/inspections", response_model=InspectionTagCreate)
 def create_inspection(
    inspection: InspectionTagBase,
    current_user = Depends(get_current_user),
-   session: Session = Depends(get_session)
+   session: Session = SessionDep
 ):
-   crud = InspectionCRUD(session)
+   crud = InspectionTAGCRUD(session)
    return crud.create_inspection(inspection, current_user.id)
 
-@router.get("/inspections", response_model=List[InspectionTag])
+@router.get("/inspections", response_model=List[InspectionTagCreate])
 def get_inspections(
    date_from: Optional[datetime] = None,
    date_to: Optional[datetime] = None,
@@ -288,10 +274,10 @@ def get_inspections(
    sort_by: Optional[str] = None,
    sort_desc: bool = False,
    current_user = Depends(get_current_user),
-   session: Session = Depends(get_session)
+   session: Session = SessionDep
 ):
-   crud = InspectionCRUD(session)
-   results, total = crud.get_inspections_with_filters(
+   crud = InspectionTAGCRUD(session)
+   results, total = crud.get_inspections(
        user_id=current_user.id,
        page=page,
        page_size=per_page,
@@ -309,14 +295,14 @@ def get_inspections(
        "per_page": per_page
    }
 
-@router.put("/inspections/{inspection_id}", response_model=InspectionTag)
+@router.put("/inspections/{inspection_id}", response_model=InspectionTagUpdate)
 def update_inspection(
    inspection_id: UUID,
    update_data: InspectionTagUpdate,
    current_user = Depends(get_current_user),
-   session: Session = Depends(get_session)
+   session: Session = SessionDep
 ):
-   crud = InspectionCRUD(session)
+   crud = InspectionTAGCRUD(session)
    try:
        return crud.update_inspection(inspection_id, current_user.id, update_data)
    except HTTPException as e:
@@ -326,31 +312,31 @@ def update_inspection(
 def delete_inspection(
    inspection_id: UUID,
    current_user = Depends(get_current_user),
-   session: Session = Depends(get_session)
+   session: Session = SessionDep
 ):
-   crud = InspectionCRUD(session)
+   crud = InspectionTAGCRUD(session)
    if crud.delete_inspection(inspection_id, current_user.id):
        return {"message": "Visual inspection data deleted successfully."}
    raise HTTPException(status_code=404, detail="Inspection not found")
 
-@router.post("/inspections/{inspection_id}/tags")
-def add_tag(
-   inspection_id: UUID,
-   tag: str,
-   current_user = Depends(get_current_user),
-   session: Session = Depends(get_session)
-):
-   crud = InspectionCRUD(session)
-   return crud.add_tag(inspection_id, current_user.id, tag)
+# @router.post("/inspections/{inspection_id}/tags")
+# def add_tag(
+#    inspection_id: UUID,
+#    tag: str,
+#    current_user = Depends(get_current_user),
+#    session: Session = Depends(get_session)
+# ):
+#    crud = InspectionCRUD(session)
+#    return crud.add_tag(inspection_id, current_user.id, tag)
 
 @router.delete("/inspections/{inspection_id}/tags/{tag}")
 def remove_tag(
    inspection_id: UUID,
    tag: str,
    current_user = Depends(get_current_user),
-   session: Session = Depends(get_session)
+   session: Session = SessionDep
 ):
-   crud = InspectionCRUD(session)
+   crud = InspectionTAGCRUD(session)
    return crud.remove_tag(inspection_id, current_user.id, tag)
 
 @router.post("/inspections/bulk/tags")
@@ -359,9 +345,9 @@ def bulk_tag_operations(
    tags: List[str],
    operation: str = Query(..., regex="^(add|remove)$"),
    current_user = Depends(get_current_user),
-   session: Session = Depends(get_session)
+   session: Session = SessionDep
 ):
-   crud = InspectionCRUD(session)
+   crud = InspectionTAGCRUD(session)
    return crud.bulk_tag_operations(
        user_id=current_user.id,
        inspection_ids=inspection_ids,
@@ -373,7 +359,7 @@ def bulk_tag_operations(
 def get_inspection_stats(
    days: int = Query(30, gt=0),
    current_user = Depends(get_current_user),
-   session: Session = Depends(get_session)
+   session: Session = SessionDep
 ):
-   crud = InspectionCRUD(session)
+   crud = InspectionTAGCRUD(session)
    return crud.get_inspection_stats(current_user.id, days)
