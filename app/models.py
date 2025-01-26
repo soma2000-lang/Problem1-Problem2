@@ -38,9 +38,10 @@ class InspectionStation(BaseModel):
   #for 1nd problem statement
 class InspectionStationCreate(BaseModel):
    name: str
+   id: uuid.UUID
    description: str
    product_image_url: HttpUrl
-   criteria: List[str]
+
 
 
 
@@ -88,7 +89,7 @@ class InspectionTagUpdate(BaseModel):
    date: Optional[datetime] = None
    inspection_type: Optional[str] = None
    details: Optional[str] = None
-   tags: Optional[List[str]] = Nones
+   tags: Optional[List[str]] = None
 
 # for 1st problem statement
 class PaginatedResponse(BaseModel):

@@ -1,11 +1,15 @@
+from app.models import InspectionOutcome,InspectionStation,InspectionStationCreate,InspectionResult,InspectionResultCreate,InspectionResultUpdate,ImageUploadResponse,Tag,InspectionTagBase,InspectionTagCreate, User,PaginatedResponse,InspectionTagUpdate
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from pydantic import BaseModel, HttpUrl
-from typing import Optional
+
 import aiofiles
 import os
-from datetime import datetime
-import uuid
 
+from sqlmodel import Session, select,func
+from fastapi import HTTPException
+import uuid
+from typing import Optional,Any,List,Optional,Tuple
+from datetime import datetime
 
 class InspectionService:
    def __init__(self, session: Session):
@@ -25,7 +29,7 @@ class InspectionService:
            station_id=station_id,
            captured_image_url=inspection.captured_image_url,  
            inspection_outcome=InspectionOutcome.PENDING,
-           similarity_score=0.0,
+
            notes=inspection.notes,
            created_at=datetime.now()
        )
@@ -35,13 +39,13 @@ class InspectionService:
        self.session.refresh(result)
        return result
 
-   def get_inspection_results(
+   def get_inspection_results(  # getting results with pagination
        self,
        user: User,
        station_id: Optional[UUID] = None,
        page: int = 1,
        page_size: int = 20
-   ) -> Tuple[List[InspectionResult], int]:
+   ) ->  PaginatedResponse:
        query = select(InspectionResult).join(InspectionStation)
        query = query.where(InspectionStation.owner_id == user.id)
        

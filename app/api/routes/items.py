@@ -3,17 +3,18 @@ from sqlmodel import Session,select
 from typing import List, Optional
 from uuid import UUID
 from datetime import datetime
-
-from .crud import InspectionService, ImageUploadService,InspectionTAGCRUD
-from .database import get_session
-
-from .models import (
+from deps import get_current_user
+from crud import InspectionService, ImageUploadService,InspectionTAGCRUD
+from app.api.deps import CurrentUser, SessionDep
+from app.models import (
    InspectionResult, 
+   InspectionStation,
    InspectionResultCreate,
    InspectionResultUpdate,
    ImageUploadResponse,
    PaginatedResponse,
    InspectionOutcome,
+    InspectionResult,
    InspectionTagBase,
    InspectionTagUpdate, InspectionTag
 
@@ -40,8 +41,8 @@ async def create_inspection(
    description: str,
    file: UploadFile = File(...),
    current_user = Depends(get_current_user),
-   session: Session = Depends(get_session)
-):
+   session: Session = SessionDep):
+
    try:
        upload_result = await image_service.save_upload_file(file)
        inspection = InspectionResultCreate(
@@ -66,8 +67,9 @@ async def create_inspection(
 async def get_inspection(
    inspection_id: UUID,
    current_user = Depends(get_current_user),
-   session: Session = Depends(get_session)
-):
+   session: Session = SessionDep):
+
+
    result = inspection_service.get_inspection_result(inspection_id, current_user)
    if not result:
        raise HTTPException(
@@ -76,7 +78,7 @@ async def get_inspection(
        )
    return result
 
-# Get filtered/paginated inspections
+# Get paginated inspections
 @router.get("/inspections/",
    response_model=PaginatedResponse,
    responses={
@@ -90,8 +92,8 @@ async def get_inspections(
    page: int = Query(1, gt=0), 
    items_per_page: int = Query(10, gt=0, le=100),
    current_user = Depends(get_current_user),
-   session: Session = Depends(get_session)
-):
+   session: Session = SessionDep):
+
    results, total = inspection_service.get_inspection_results(
        user=current_user,
        name=name,
@@ -121,8 +123,8 @@ async def update_inspection(
    inspection_id: UUID,
    update_data: InspectionResultUpdate,
    current_user = Depends(get_current_user),
-   session: Session = Depends(get_session)
-):
+   session: Session = SessionDep):
+
    try:
        result = inspection_service.update_inspection_result(
            inspection_id, update_data, current_user
@@ -143,8 +145,8 @@ async def update_inspection(
 async def delete_inspection(
    inspection_id: UUID,
    current_user = Depends(get_current_user),
-   session: Session = Depends(get_session)
-):
+   session: Session = SessionDep):
+
    if not inspection_service.delete_inspection_result(inspection_id, current_user):
        raise HTTPException(
            status_code=404,
@@ -154,7 +156,26 @@ async def delete_inspection(
        "message": f"Inspection with ID {inspection_id} deleted successfully"
    }
 
+@router.get("/inspections", response_model=List[InspectionResult])
+async def list_inspections(
+    *,
+    session: Session = SessionDep,
+    name: Optional[str] = Query(None, description="Filter by inspection name"),
+    description: Optional[str] = Query(None, description="Filter by inspection description")
+):
+    query = select(InspectionStation)
+    
+   
+    if name:
+        query = query.where(InspectionStation.name.ilike(f"%{name}%"))
+    
+    
+    if description:
+        query = query.where(InspectionStation.description.ilike(f"%{description}%"))
 
+    inspections = session.exec(query).all()
+    
+    return [InspectionResult.model_validate(inspection) for inspection in inspections]
 
 
     # API Route
