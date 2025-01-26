@@ -339,27 +339,19 @@ def remove_tag(
    crud = InspectionTAGCRUD(session)
    return crud.remove_tag(inspection_id, current_user.id, tag)
 
-@router.post("/inspections/bulk/tags")
-def bulk_tag_operations(
-   inspection_ids: List[UUID],
-   tags: List[str],
-   operation: str = Query(..., regex="^(add|remove)$"),
-   current_user = Depends(get_current_user),
-   session: Session = SessionDep
-):
-   crud = InspectionTAGCRUD(session)
-   return crud.bulk_tag_operations(
-       user_id=current_user.id,
-       inspection_ids=inspection_ids,
-       tags=tags,
-       operation=operation
-   )
+# @router.post("/inspections/bulk/tags")
+# def bulk_tag_operations(
+#    inspection_ids: List[UUID],
+#    tags: List[str],
+#    operation: str = Query(..., regex="^(add|remove)$"),
+#    current_user = Depends(get_current_user),
+#    session: Session = SessionDep
+# ):
+#    crud = InspectionTAGCRUD(session)
+#    return crud.bulk_tag_operations(
+#        user_id=current_user.id,
+#        inspection_ids=inspection_ids,
+#        tags=tags,
+#        operation=operation
+#    )
 
-@router.get("/inspections/stats")
-def get_inspection_stats(
-   days: int = Query(30, gt=0),
-   current_user = Depends(get_current_user),
-   session: Session = SessionDep
-):
-   crud = InspectionTAGCRUD(session)
-   return crud.get_inspection_stats(current_user.id, days)
