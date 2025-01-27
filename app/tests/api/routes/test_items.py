@@ -54,7 +54,7 @@ def sample_inspection():
 
 def test_create_inspection(inspection_crud, test_user, sample_inspection):
    result = inspection_crud.create_inspection(sample_inspection, test_user.id)
-   assert isinstance(result, InspectionTag)
+   assert isinstance(result, InspectionTagBase)
    assert result.inspection_type == sample_inspection.inspection_type
    assert result.tags == sample_inspection.tags
 
