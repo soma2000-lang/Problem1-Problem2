@@ -17,7 +17,7 @@ from app.models import (
     InspectionResult,
     InspectionTagCreate,
    InspectionTagBase,
-   InspectionTagUpdate, InspectionTag
+   InspectionTagUpdate
 
 )
 

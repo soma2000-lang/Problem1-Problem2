@@ -4,9 +4,24 @@ from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from typing import List
+from app.crud import InspectionService, ImageUploadService,InspectionTAGCRUD,create_inspection
+from app.models import (
+   InspectionResult, 
+   Tag,
+   User,
+   InspectionStation,
+   InspectionResultCreate,
+   InspectionResultUpdate,
+   ImageUploadResponse,
+   PaginatedResponse,
+   InspectionOutcome,
+    InspectionResult,
+    InspectionTagCreate,
+   InspectionTagBase,
+   InspectionTagUpdate
 
-from .models import InspectionTagBase, InspectionTag, User, Tag
-from .crud import InspectionCRUD
+)
+
 
 @pytest.fixture
 def db_session():
@@ -26,7 +41,7 @@ def test_user():
 
 @pytest.fixture
 def inspection_crud(db_session):
-   return InspectionCRUD(db_session)
+   return InspectionTAGCRUD(db_session)
 
 @pytest.fixture
 def sample_inspection():
