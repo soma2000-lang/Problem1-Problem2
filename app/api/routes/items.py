@@ -4,7 +4,10 @@ from typing import List, Optional
 from uuid import UUID
 from datetime import datetime
 from crud import InspectionService, ImageUploadService,InspectionTAGCRUD
-from app.api.deps import CurrentUser, SessionDep
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from app.api.deps import  CurrentUser, SessionDep
 from app.models import (
    InspectionResult, 
    Tag,
@@ -25,6 +28,7 @@ router = APIRouter()
 inspection_service = InspectionService()
 image_service = ImageUploadService()
 
+templates = Jinja2Templates(directory="templates")
 
 # Create inspection
 @router.post("/inspections/", 
@@ -41,7 +45,7 @@ async def create_inspection(
    name: str,
    description: str,
    file: UploadFile = File(...),
-   current_user = Depends(CurrentUser),
+   current_user =  Depends(CurrentUser),
    session: Session = SessionDep):
 
    try:
@@ -67,7 +71,7 @@ async def create_inspection(
 )
 async def get_inspection(
    inspection_id: UUID,
-   current_user =  CurrentUser,
+   current_user =   Depends(CurrentUser),
    session: Session = SessionDep):
 
 
@@ -92,7 +96,7 @@ async def get_inspections(
    description: Optional[str] = None,
    page: int = Query(1, gt=0), 
    items_per_page: int = Query(10, gt=0, le=100),
-   current_user =  CurrentUser,
+   current_user =   Depends(CurrentUser),
    session: Session = SessionDep):
 
    results, total = inspection_service.get_inspection_results(
@@ -123,7 +127,7 @@ async def get_inspections(
 async def update_inspection(
    inspection_id: UUID,
    update_data: InspectionResultUpdate,
-   current_user =  CurrentUser,
+   current_user =   Depends(CurrentUser),
    session: Session = SessionDep):
 
    try:
@@ -145,7 +149,7 @@ async def update_inspection(
 )
 async def delete_inspection(
    inspection_id: UUID,
-   current_user =  CurrentUser,
+   current_user =   Depends(CurrentUser),
    session: Session = SessionDep):
 
    if not inspection_service.delete_inspection_result(inspection_id, current_user):
@@ -179,7 +183,7 @@ async def list_inspections(
     return [InspectionResult.model_validate(inspection) for inspection in inspections]
 
 
-#Add Tag to Inspection:
+#Add Tag to Inspection: #Route for 2nd problem
 @router.post("/inspections/{inspection_id}/tags", response_model=InspectionTagCreate)
 def add_tag_to_inspection(
     tag:UUID,
@@ -205,7 +209,7 @@ def add_tag_to_inspection(
         tags=[tag.name for tag in inspection.tags]
     )
     
-
+#Route for 1st problem
 @router.post("/upload/image/", response_model=ImageUploadResponse)
 async def upload_image(file: UploadFile = File(...)):
     return await image_service.save_upload_file(file)
@@ -252,16 +256,17 @@ async def filter_inspections(
     return [InspectionTagCreate.model_validate(inspection) for inspection in inspections]
 
 
-
+ #Route for 2nd problem
 @router.post("/inspections", response_model=InspectionTagCreate)
 def create_inspection(
    inspection: InspectionTagBase,
-   current_user =  CurrentUser,
+   current_user =   Depends(CurrentUser),
    session: Session = SessionDep
 ):
    crud = InspectionTAGCRUD(session)
    return crud.create_inspection(inspection, current_user.id)
 
+#Route for 2nd problem
 @router.get("/inspections", response_model=List[InspectionTagCreate])
 def get_inspections(
    date_from: Optional[datetime] = None,
@@ -272,7 +277,7 @@ def get_inspections(
    per_page: int = Query(10, gt=0, le=100),
    sort_by: Optional[str] = None,
    sort_desc: bool = False,
-   current_user =  CurrentUser,
+   current_user =   Depends(CurrentUser),
    session: Session = SessionDep
 ):
    crud = InspectionTAGCRUD(session)
@@ -293,12 +298,12 @@ def get_inspections(
        "page": page,
        "per_page": per_page
    }
-
+#Route for 2nd problem
 @router.put("/inspections/{inspection_id}", response_model=InspectionTagUpdate)
 def update_inspection(
    inspection_id: UUID,
    update_data: InspectionTagUpdate,
-   current_user =  CurrentUser,
+   current_user =   Depends(CurrentUser),
    session: Session = SessionDep
 ):
    crud = InspectionTAGCRUD(session)
@@ -306,11 +311,11 @@ def update_inspection(
        return crud.update_inspection(inspection_id, current_user.id, update_data)
    except HTTPException as e:
        raise e
-
+ #Route for 2nd problem
 @router.delete("/inspections/{inspection_id}")
 def delete_inspection(
    inspection_id: UUID,
-   current_user =  CurrentUser,
+   current_user =   Depends(CurrentUser),
    session: Session = SessionDep
 ):
    crud = InspectionTAGCRUD(session)
@@ -322,35 +327,20 @@ def delete_inspection(
 # def add_tag(
 #    inspection_id: UUID,
 #    tag: str,
-#    current_user = CurrentUser,
+#    current_user =  Depends(CurrentUser),
 #    session: Session = Depends(get_session)
 # ):
 #    crud = InspectionCRUD(session)
 #    return crud.add_tag(inspection_id, current_user.id, tag)
 
+ #Route for 2nd problem
 @router.delete("/inspections/{inspection_id}/tags/{tag}")
 def remove_tag(
    inspection_id: UUID,
    tag: str,
-   current_user = CurrentUser,
+   current_user =  Depends(CurrentUser),
    session: Session = SessionDep
 ):
    crud = InspectionTAGCRUD(session)
    return crud.remove_tag(inspection_id, current_user.id, tag)
-
-# @router.post("/inspections/bulk/tags")
-# def bulk_tag_operations(
-#    inspection_ids: List[UUID],
-#    tags: List[str],
-#    operation: str = Query(..., regex="^(add|remove)$"),
-#    current_user = CurrentUser,
-#    session: Session = SessionDep
-# ):
-#    crud = InspectionTAGCRUD(session)
-#    return crud.bulk_tag_operations(
-#        user_id=current_user.id,
-#        inspection_ids=inspection_ids,
-#        tags=tags,
-#        operation=operation
-#    )
 

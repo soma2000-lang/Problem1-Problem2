@@ -19,6 +19,8 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     generate_unique_id_function=custom_generate_unique_id,
 )
+from fastapi.staticfiles import StaticFiles
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 if settings.all_cors_origins:
