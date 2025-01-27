@@ -1,26 +1,36 @@
+
 FROM tiangolo/uvicorn-gunicorn-fastapi:python3.10
 
-WORKDIR /app/
+
+WORKDIR /app
 
 
-RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python && \
-    cd /usr/local/bin && \
-    ln -s /opt/poetry/bin/poetry && \
-    poetry config virtualenvs.create false
+RUN powershell -Command "Invoke-WebRequest -Uri https://install.python-poetry.org -OutFile install-poetry.py" && \
+    python install-poetry.py --version 1.7.1 && \
+    setx /M PATH "%PATH%;%USERPROFILE%\.local\bin"
 
+# Configure Poetry
+RUN poetry config virtualenvs.create false
 
-COPY ./pyproject.toml ./poetry.lock* /app/
+# Copy project files
+COPY pyproject.toml poetry.lock* /app/
 
+# Install dependencies
 ARG INSTALL_DEV=false
-RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install --no-root ; else poetry install --no-root --only main ; fi"
+RUN if "%INSTALL_DEV%"=="true" ( \
+        poetry install --no-root \
+    ) else ( \
+        poetry install --no-root --only main \
+    )
 
-ENV PYTHONPATH=/app
+# Set Python path
+ENV PYTHONPATH=C:\app
 
-COPY ./scripts/ /app/
+# Copy application files
+COPY scripts/ /app/scripts/
+COPY prestart.sh /app/
+COPY tests-start.sh /app/
+COPY app /app/app
 
-
-COPY ./prestart.sh /app/
-
-COPY ./tests-start.sh /app/
-
-COPY ./app /app/app
+# Optional: Use PowerShell as default shell
+SHELL ["powershell", "-Command"]
