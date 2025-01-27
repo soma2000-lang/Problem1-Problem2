@@ -1,16 +1,18 @@
 from app.models import InspectionOutcome,InspectionStation,InspectionStationCreate,InspectionResult,InspectionResultCreate,InspectionResultUpdate,ImageUploadResponse,Tag,InspectionTagBase,InspectionTagCreate, User,PaginatedResponse,InspectionTagUpdate
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from pydantic import BaseModel, HttpUrl
+from uuid import UUID
 
-import aiofiles
+import aiofiles 
 import os
 
 from sqlmodel import Session, select,func
 from fastapi import HTTPException
 import uuid
-from typing import Optional,Any,List,Optional,Tuple
+from typing import Optional,List,Optional
 from datetime import datetime
 
+   # for 1st problem statement
 class InspectionService:
    def __init__(self, session: Session):
        self.session = session
@@ -107,7 +109,7 @@ class InspectionService:
        self.session.delete(result)
        self.session.commit()
        return True
-
+# for the image uploading service in the 1st problem
 class ImageUploadService:
     def __init__(self):
         self.UPLOAD_DIR = "static/uploads"

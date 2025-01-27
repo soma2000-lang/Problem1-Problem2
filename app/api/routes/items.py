@@ -3,7 +3,6 @@ from sqlmodel import Session,select
 from typing import List, Optional
 from uuid import UUID
 from datetime import datetime
-from deps import get_current_user
 from crud import InspectionService, ImageUploadService,InspectionTAGCRUD
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
@@ -42,7 +41,7 @@ async def create_inspection(
    name: str,
    description: str,
    file: UploadFile = File(...),
-   current_user = Depends(get_current_user),
+   current_user = Depends(CurrentUser),
    session: Session = SessionDep):
 
    try:
@@ -68,7 +67,7 @@ async def create_inspection(
 )
 async def get_inspection(
    inspection_id: UUID,
-   current_user = Depends(get_current_user),
+   current_user =  CurrentUser,
    session: Session = SessionDep):
 
 
@@ -93,7 +92,7 @@ async def get_inspections(
    description: Optional[str] = None,
    page: int = Query(1, gt=0), 
    items_per_page: int = Query(10, gt=0, le=100),
-   current_user = Depends(get_current_user),
+   current_user =  CurrentUser,
    session: Session = SessionDep):
 
    results, total = inspection_service.get_inspection_results(
@@ -124,7 +123,7 @@ async def get_inspections(
 async def update_inspection(
    inspection_id: UUID,
    update_data: InspectionResultUpdate,
-   current_user = Depends(get_current_user),
+   current_user =  CurrentUser,
    session: Session = SessionDep):
 
    try:
@@ -146,7 +145,7 @@ async def update_inspection(
 )
 async def delete_inspection(
    inspection_id: UUID,
-   current_user = Depends(get_current_user),
+   current_user =  CurrentUser,
    session: Session = SessionDep):
 
    if not inspection_service.delete_inspection_result(inspection_id, current_user):
@@ -257,7 +256,7 @@ async def filter_inspections(
 @router.post("/inspections", response_model=InspectionTagCreate)
 def create_inspection(
    inspection: InspectionTagBase,
-   current_user = Depends(get_current_user),
+   current_user =  CurrentUser,
    session: Session = SessionDep
 ):
    crud = InspectionTAGCRUD(session)
@@ -273,7 +272,7 @@ def get_inspections(
    per_page: int = Query(10, gt=0, le=100),
    sort_by: Optional[str] = None,
    sort_desc: bool = False,
-   current_user = Depends(get_current_user),
+   current_user =  CurrentUser,
    session: Session = SessionDep
 ):
    crud = InspectionTAGCRUD(session)
@@ -299,7 +298,7 @@ def get_inspections(
 def update_inspection(
    inspection_id: UUID,
    update_data: InspectionTagUpdate,
-   current_user = Depends(get_current_user),
+   current_user =  CurrentUser,
    session: Session = SessionDep
 ):
    crud = InspectionTAGCRUD(session)
@@ -311,7 +310,7 @@ def update_inspection(
 @router.delete("/inspections/{inspection_id}")
 def delete_inspection(
    inspection_id: UUID,
-   current_user = Depends(get_current_user),
+   current_user =  CurrentUser,
    session: Session = SessionDep
 ):
    crud = InspectionTAGCRUD(session)
@@ -323,7 +322,7 @@ def delete_inspection(
 # def add_tag(
 #    inspection_id: UUID,
 #    tag: str,
-#    current_user = Depends(get_current_user),
+#    current_user = CurrentUser,
 #    session: Session = Depends(get_session)
 # ):
 #    crud = InspectionCRUD(session)
@@ -333,7 +332,7 @@ def delete_inspection(
 def remove_tag(
    inspection_id: UUID,
    tag: str,
-   current_user = Depends(get_current_user),
+   current_user = CurrentUser,
    session: Session = SessionDep
 ):
    crud = InspectionTAGCRUD(session)
@@ -344,7 +343,7 @@ def remove_tag(
 #    inspection_ids: List[UUID],
 #    tags: List[str],
 #    operation: str = Query(..., regex="^(add|remove)$"),
-#    current_user = Depends(get_current_user),
+#    current_user = CurrentUser,
 #    session: Session = SessionDep
 # ):
 #    crud = InspectionTAGCRUD(session)

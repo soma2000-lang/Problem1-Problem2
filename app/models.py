@@ -3,12 +3,14 @@ from typing import List, Optional
 from datetime import datetime
 from pydantic import EmailStr, HttpUrl, BaseModel, Field
 from enum import Enum
+from sqlmodel import Field, Relationship, SQLModel
 
 class InspectionOutcome(str, Enum):
    PASS = "pass"
    FAIL = "fail"
    PENDING = "pending"
 
+# common for both models
 class UserBase(BaseModel):
    email: EmailStr 
    is_active: bool = True
@@ -32,6 +34,8 @@ class InspectionStation(BaseModel):
 
 
 
+class Message(SQLModel):
+    message: str
 
   
    
@@ -41,6 +45,18 @@ class InspectionStationCreate(BaseModel):
    id: uuid.UUID
    description: str
    product_image_url: HttpUrl
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+# Contents of JWT token
+class TokenPayload(BaseModel):
+    sub: Optional[str] = None
+class Message(SQLModel):
+    message: str
 
 
 
@@ -65,16 +81,17 @@ class InspectionResultUpdate(BaseModel):
    inspection_outcome: Optional[InspectionOutcome] = None
   
    notes: Optional[str] = None
+   #for the 2nd problem
 class ImageUploadResponse(BaseModel):
     file_id: uuid.UUID
     file_name: str
     file_url: HttpUrl
     uploaded_at: datetime
 
-
+   #for the 2nd problem
 class TagItem(BaseModel):
     name: str = Field(..., description="Name of the tag")
-
+   #for the 2nd problem
 class Tag(BaseModel):
     tags: List[TagItem]
 
@@ -86,13 +103,14 @@ class InspectionTagBase(BaseModel):
    tags: Tag | None=None
 class InspectionTagCreate(InspectionTagBase):
     id: uuid.UUID
-
+   #for the 2nd problem
 class InspectionTagUpdate(BaseModel):
    date: Optional[datetime] = None
    inspection_type: Optional[str] = None
    details: Optional[str] = None
    tags: Tag | None=None
    id: uuid.UUID
+   #for the 2nd problem
 class PaginatedResponse(BaseModel):
    data: List[InspectionTagCreate]
    total: int
