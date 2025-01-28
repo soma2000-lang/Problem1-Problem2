@@ -90,18 +90,10 @@ Adminer, database web administration: http://localhost:8080
 
 
 
-```
-
-Or we could stop the `backend` Docker Compose service:
-
-```bash
-docker compose stop backend
-```
-
 And then we can run the local development server for the backend:
 
 ```bash
-cd backend
+
 fastapi dev app/main.py
 ```
 
@@ -159,11 +151,8 @@ ruff.....................................................................Passed
 ruff-format..............................................................Passed
 eslint...................................................................Passed
 prettier.................................................................Passed
-```
 
-## URLs
-
-The production or staging URLs would use these same paths, but with wer own domain.
+## Pre-commits and code linting
 
 ### Development URLs
 
@@ -173,5 +162,17 @@ Backend: http://localhost:8000
 
 Automatic Interactive Docs (Swagger UI): http://localhost:8000/docs
 
-## Scope of Improvement 
+# Extra Features implemented
+
+1. For linting ruff has been used
+2. Necessary test unit tests have been added -(more to be added and improved)
+3. A Sentry SDK is used to automatically capture and report errors, exceptions, and other events happening within an application
+4. Efficient use of middleware
+5. In case of uploaded image size is more than efficient handling of that case using io
+7. Usage of Starlette (Asynchronous Server Gateway Interface) 
+8. Efficient security measures
+
+
+
+### Scope of Improvement 
 The tests writing are still under progress and have not been fully implemened for all the features due to time constaints
