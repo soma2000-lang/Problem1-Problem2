@@ -157,7 +157,7 @@ class InspectionTAGCRUD:
        id: UUID
    ) -> InspectionTagCreate:
        db_inspection = InspectionTagCreate(
-           **inspection.dict(),
+           **inspection.model_copy(),
            id=id
        )
        self.session.add(db_inspection)

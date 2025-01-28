@@ -1,12 +1,29 @@
 import pytest
 from uuid import uuid4
 from datetime import datetime, timedelta
-from fastapi import HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile, status,Request,Response
 from sqlmodel import Session, create_engine, SQLModel
 import tempfile
 import shutil
 import os
+import io
+from app.models import (
+   InspectionResult, 
+   Tag,
+   User,
+   InspectionStation,
+   InspectionResultCreate,
+   InspectionResultUpdate,
+   ImageUploadResponse,
+   PaginatedResponse,
+   InspectionOutcome,
+    InspectionResult,
+    InspectionTagCreate,
+   InspectionTagBase,
+   InspectionTagUpdate
 
+)
+from app.crud import InspectionService, ImageUploadService,InspectionTAGCRUD
 @pytest.fixture
 def test_db():
    engine = create_engine("sqlite:///./test.db")

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile, status,Request,Response
 from sqlmodel import Session,select
 from typing import List, Optional
 from uuid import UUID
@@ -138,7 +138,8 @@ async def update_inspection(
    except ValueError as e:
        raise HTTPException(status_code=404, detail=str(e))
 
-# Delete inspection
+# Delete inspection 
+#Route for 1nd problem
 @router.delete("/inspections/{inspection_id}",
    status_code=status.HTTP_200_OK,
    responses={
@@ -161,6 +162,7 @@ async def delete_inspection(
        "message": f"Inspection with ID {inspection_id} deleted successfully"
    }
 
+#Route for 1nd problem
 @router.get("/inspections", response_model=List[InspectionResult])
 async def list_inspections(
     *,
@@ -210,10 +212,37 @@ def add_tag_to_inspection(
     )
     
 #Route for 1st problem
-@router.post("/upload/image/", response_model=ImageUploadResponse)
-async def upload_image(file: UploadFile = File(...)):
-    return await image_service.save_upload_file(file)
 
+
+
+@router.post("/upload/image/", response_class=HTMLResponse)
+async def upload_image(
+    request: Request,
+    file: UploadFile = File(...)
+):
+    try:
+       
+        upload_result = await image_service.save_upload_file(file)
+   
+        return templates.TemplateResponse(
+            "upload.html",
+            {
+                "request": request,
+                "success": True,
+                "message": "File uploaded successfully!",
+                "file_url": upload_result.file_url  # Assuming this is returned by your service
+            }
+        )
+    except Exception as e:
+        # Return template with error context
+        return templates.TemplateResponse(
+            "upload.html",
+            {
+                "request": request,
+                "success": False,
+                "message": str(e)
+            }
+        )
 @router.post("/inspections/{inspection_id}/image")
 async def upload_inspection_image(
     inspection_id: UUID,
@@ -323,15 +352,7 @@ def delete_inspection(
        return {"message": "Visual inspection data deleted successfully."}
    raise HTTPException(status_code=404, detail="Inspection not found")
 
-# @router.post("/inspections/{inspection_id}/tags")
-# def add_tag(
-#    inspection_id: UUID,
-#    tag: str,
-#    current_user =  Depends(CurrentUser),
-#    session: Session = Depends(get_session)
-# ):
-#    crud = InspectionCRUD(session)
-#    return crud.add_tag(inspection_id, current_user.id, tag)
+
 
  #Route for 2nd problem
 @router.delete("/inspections/{inspection_id}/tags/{tag}")

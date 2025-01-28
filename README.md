@@ -75,10 +75,8 @@ PROBLEM3/
 └── tests-start.sh
 
 
-## Docker Compose
 
-
-* Now you can open your browser and interact with these URLs:
+* Now we can open wer browser and interact with these URLs:
 
 Frontend, built with Docker, with routes handled based on the path: http://localhost:5173
 
@@ -94,13 +92,13 @@ Adminer, database web administration: http://localhost:8080
 
 ```
 
-Or you could stop the `backend` Docker Compose service:
+Or we could stop the `backend` Docker Compose service:
 
 ```bash
 docker compose stop backend
 ```
 
-And then you can run the local development server for the backend:
+And then we can run the local development server for the backend:
 
 ```bash
 cd backend
@@ -108,58 +106,49 @@ fastapi dev app/main.py
 ```
 
 
-## Docker Compose files and env vars
-
-They also use some additional configurations taken from environment variables set in the scripts before calling the `docker compose` command.
-
-After changing variables, make sure you restart the stack:
-
-```bash
-docker compose watch
-```
 
 ## The .env file
 
-The `.env` file is the one that contains all your configurations, generated keys and passwords, etc.
+The `.env` file is the one that contains all wer configurations, generated keys and passwords, etc.
 
-Depending on your workflow, you could want to exclude it from Git, for example if your project is public. In that case, you would have to make sure to set up a way for your CI tools to obtain it while building or deploying your project.
+Depending on wer workflow, we could want to exclude it from Git, for example if wer project is public. In that case, we would have to make sure to set up a way for wer CI tools to obtain it while building or deploying wer project.
 
-One way to do it could be to add each environment variable to your CI/CD system, and updating the `docker-compose.yml` file to read that specific env var instead of reading the `.env` file.
+One way to do it could be to add each environment variable to wer CI/CD system, and updating the `docker-compose.yml` file to read that specific env var instead of reading the `.env` file.
 
 ## Pre-commits and code linting
 
 we are using a tool called [pre-commit](https://pre-commit.com/) for code linting and formatting.
 
-When you install it, it runs right before making a commit in git. This way it ensures that the code is consistent and formatted even before it is committed.
+When we install it, it runs right before making a commit in git. This way it ensures that the code is consistent and formatted even before it is committed.
 
-You can find a file `.pre-commit-config.yaml` with configurations at the root of the project.
+we can find a file `.pre-commit-config.yaml` with configurations at the root of the project.
 
 #### Install pre-commit to run automatically
 
-`pre-commit` is already part of the dependencies of the project, but you could also install it globally if you prefer to, following [the official pre-commit docs](https://pre-commit.com/).
+`pre-commit` is already part of the dependencies of the project, but we could also install it globally if we prefer to, following [the official pre-commit docs](https://pre-commit.com/).
 
-After having the `pre-commit` tool installed and available, you need to "install" it in the local repository, so that it runs automatically before each commit.
+After having the `pre-commit` tool installed and available, we need to "install" it in the local repository, so that it runs automatically before each commit.
 
-Using `uv`, you could do it with:
+Using `uv`, we could do it with:
 
 ```bash
 ❯ uv run pre-commit install
 pre-commit installed at .git/hooks/pre-commit
 ```
 
-Now whenever you try to commit, e.g. with:
+Now whenever we try to commit, e.g. with:
 
 ```bash
 git commit
 ```
 
-...pre-commit will run and check and format the code you are about to commit, and will ask you to add that code (stage it) with git again before committing.
+...pre-commit will run and check and format the code we are about to commit, and will ask we to add that code (stage it) with git again before committing.
 
-Then you can `git add` the modified/fixed files again and now you can commit.
+Then we can `git add` the modified/fixed files again and now we can commit.
 
 #### Running pre-commit hooks manually
 
-you can also run `pre-commit` manually on all the files, you can do it using `uv` with:
+we can also run `pre-commit` manually on all the files, we can do it using `uv` with:
 
 ```bash
 ❯ uv run pre-commit run --all-files
@@ -174,7 +163,7 @@ prettier.................................................................Passed
 
 ## URLs
 
-The production or staging URLs would use these same paths, but with your own domain.
+The production or staging URLs would use these same paths, but with wer own domain.
 
 ### Development URLs
 
@@ -184,3 +173,5 @@ Backend: http://localhost:8000
 
 Automatic Interactive Docs (Swagger UI): http://localhost:8000/docs
 
+## Scope of Improvement 
+The tests writing are still under progress and have not been fully implemened for all the features due to time constaints
