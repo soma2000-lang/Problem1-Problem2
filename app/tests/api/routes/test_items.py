@@ -3,6 +3,7 @@ from uuid import uuid4
 from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
+from os import getenv
 from typing import List
 from app.crud import InspectionService, ImageUploadService,InspectionTAGCRUD,create_inspection
 from app.models import (
@@ -25,8 +26,8 @@ from app.models import (
 
 @pytest.fixture
 def db_session():
-   engine = create_engine("sqlite:///test.db") 
-   SQLModel.metadata.create_all(engine)
+   DATABASE_URL = f"postgresql://{getenv('DB_USER')}:{getenv('DB_PASSWORD')}@{getenv('DB_HOST')}:{getenv('DB_PORT')}/{getenv('DB_NAME')}"
+   engine = create_engine(DATABASE_URL)
    with Session(engine) as session:
        yield session
    SQLModel.metadata.drop_all(engine)
